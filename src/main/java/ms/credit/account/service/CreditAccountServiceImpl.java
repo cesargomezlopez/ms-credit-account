@@ -56,16 +56,9 @@ public class CreditAccountServiceImpl implements ICreditAccountService {
         
         try {
           return getClientByIdFromApi(entity.getClientId()).flatMap(cl -> {
-            System.out.println(cl);
-
             JsonParser parser = new JsonParser();
             JsonObject client = parser.parse(cl).getAsJsonObject();
-
-            System.out.println(client);
-              
             String id = client.get("id").getAsString();
-
-            System.out.println(id);
               
             if (id != null) {
               return creditAccountRepository.save(entity);
