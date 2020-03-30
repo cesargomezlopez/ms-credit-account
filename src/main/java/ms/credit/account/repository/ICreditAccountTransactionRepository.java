@@ -12,5 +12,8 @@ public interface ICreditAccountTransactionRepository
   Flux<CreditAccountTransaction> findByClientId(String clientId);
 
   Flux<CreditAccountTransaction> findByCreditAccountId(String creditAccountId);
+  
+  Flux<CreditAccountTransaction>
+      findByCreditAccountIdAndClientId(String creditAccountId, String clientId);
 
 }

@@ -10,4 +10,7 @@ public interface ICreditAccountTransactionService extends ICrud<CreditAccountTra
 
   Flux<CreditAccountTransaction> findByCreditAccountId(String creditAccountId);
 
+  Flux<CreditAccountTransaction>
+      findByCreditAccountIdAndClientId(String creditAccountId, String clientId);
+
 }

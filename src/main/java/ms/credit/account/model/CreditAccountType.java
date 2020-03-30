@@ -28,8 +28,8 @@ public class CreditAccountType {
 
   private Double maxCreditAmount;
 
-  private Integer minQuotas;
+  private Double minInterest;
 
-  private Integer maxQuotas;
+  private Double maxInterest;
 
 }

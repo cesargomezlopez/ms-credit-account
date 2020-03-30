@@ -30,13 +30,13 @@ public class CreditAccount {
   @NotEmpty(message = "Credit Account Client Id can not be empty")
   private String clientId;
 
-  private Double startDebt;
+  private Double creditAmount;
   
-  private Integer numberQuotas;
+  private Double balance;
+  
+  private Double consume;
 
   private Double interest;
-
-  private Double pendingDebt;
 
   @JsonFormat(pattern = "yyyy-MM-dd")
   private Date startDate;

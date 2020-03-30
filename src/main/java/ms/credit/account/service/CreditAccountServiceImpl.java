@@ -5,6 +5,8 @@ import com.google.gson.JsonParser;
 import java.util.Date;
 import ms.credit.account.model.CreditAccount;
 import ms.credit.account.repository.ICreditAccountRepository;
+import ms.credit.account.repository.ICreditAccountTypeRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -16,6 +18,9 @@ public class CreditAccountServiceImpl implements ICreditAccountService {
 
   @Autowired
   private ICreditAccountRepository creditAccountRepository;
+  
+  @Autowired
+  private ICreditAccountTypeRepository creditAccountTypeRepository;
 
   @Override
   public Flux<CreditAccount> findAll() {
@@ -37,12 +42,14 @@ public class CreditAccountServiceImpl implements ICreditAccountService {
         String id = client.get("id").getAsString();
         
         if (id != null) {
-          entity.setStartDate(new Date());
-          return creditAccountRepository.save(entity);
+          return creditAccountTypeRepository
+              .findById(entity.getCreditAccountType().getId()).flatMap(cat -> {
+                entity.setStartDate(new Date());
+                return creditAccountRepository.save(entity);
+              }).switchIfEmpty(Mono.error(new Exception("Credit Account Type not found")));
         } else {
           return Mono.error(new Exception("Client not found"));
         }
-        
       });
     } catch (Exception e) {
       return Mono.error(e);
@@ -53,7 +60,6 @@ public class CreditAccountServiceImpl implements ICreditAccountService {
   public Mono<CreditAccount> update(CreditAccount entity) {
     try {
       return creditAccountRepository.findById(entity.getId()).flatMap(ca -> {
-        
         try {
           return getClientByIdFromApi(entity.getClientId()).flatMap(cl -> {
             JsonParser parser = new JsonParser();
@@ -61,18 +67,19 @@ public class CreditAccountServiceImpl implements ICreditAccountService {
             String id = client.get("id").getAsString();
               
             if (id != null) {
-              return creditAccountRepository.save(entity);
+              return creditAccountTypeRepository
+                  .findById(entity.getCreditAccountType().getId()).flatMap(cat -> {
+                    entity.setStartDate(new Date());
+                    return creditAccountRepository.save(entity);
+                  }).switchIfEmpty(Mono.error(new Exception("Credit Account Type not found")));
             } else {
               return Mono.error(new Exception("Client not found"));
             }
-              
           });
         } catch (Exception e) {
           return Mono.error(e);
         }
-        
-        
-      }).switchIfEmpty(Mono.error(new Exception("Bank Account not found")));
+      }).switchIfEmpty(Mono.error(new Exception("Credit Account not found")));
     } catch (Exception e) {
       return Mono.error(e);
     }
