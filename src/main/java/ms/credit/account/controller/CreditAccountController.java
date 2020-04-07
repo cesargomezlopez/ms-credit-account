@@ -52,6 +52,18 @@ public class CreditAccountController {
     }).defaultIfEmpty(ResponseEntity.notFound().build());
   }
   
+  @GetMapping(value = "/findCreditAccountsByClientId", produces = MediaType.APPLICATION_JSON_VALUE)
+  @ApiOperation(value = "Find a Credit Accounts by Client Id",
+      notes = "Find a Credit Accounts registered By Client Id")
+  public Mono<ResponseEntity<Flux<CreditAccount>>> 
+      findCreditAccountsByClientId(@RequestParam("clientId")String clientId) {
+    return Mono.just(ResponseEntity
+      .ok()
+      .contentType(MediaType.APPLICATION_JSON)
+      .body(creditAccountService.findByClientId(clientId)))
+      .defaultIfEmpty(ResponseEntity.notFound().build());
+  }
+  
   @PostMapping(value = "/createCreditAccount", produces = MediaType.APPLICATION_JSON_VALUE)
   @ApiOperation(value = "Creates a Credit Account",
       notes = "Register a Credit Account")
@@ -85,5 +97,29 @@ public class CreditAccountController {
     return creditAccountService.deleteById(id)
       .then(Mono.just(new ResponseEntity<Void>(HttpStatus.NO_CONTENT)))
       .defaultIfEmpty(ResponseEntity.notFound().build());
+  }
+  
+  @GetMapping(value = "/getDebt", produces = MediaType.APPLICATION_JSON_VALUE)
+  @ApiOperation(value = "Get Credit Account Debt", notes = "Required credit account id")
+  public Mono<ResponseEntity<Double>> getDebt(
+      @RequestParam("creditAccountId")String creditAccountId){
+    return creditAccountService.getDebt(creditAccountId).flatMap(debt -> {
+      return Mono.just(ResponseEntity
+        .ok()
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(debt));
+    }).defaultIfEmpty(ResponseEntity.notFound().build());
+  }
+  
+  @PostMapping(value = "/payDebt", produces = MediaType.APPLICATION_JSON_VALUE)
+  @ApiOperation(value = "Pay Credit Account Debt", notes = "Required credit account id")
+  public Mono<ResponseEntity<Integer>> payDebt(
+      @RequestParam("creditAccountId")String creditAccountId){
+    return creditAccountService.payDebt(creditAccountId).flatMap(rs -> {
+      return Mono.just(ResponseEntity
+        .ok()
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(rs));
+    }).defaultIfEmpty(ResponseEntity.notFound().build());
   }
 }

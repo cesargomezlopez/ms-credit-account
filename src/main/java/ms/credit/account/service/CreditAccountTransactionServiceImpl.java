@@ -3,7 +3,6 @@ package ms.credit.account.service;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.util.Date;
-import ms.credit.account.model.CreditAccount;
 import ms.credit.account.model.CreditAccountTransaction;
 import ms.credit.account.repository.ICreditAccountRepository;
 import ms.credit.account.repository.ICreditAccountTransactionRepository;

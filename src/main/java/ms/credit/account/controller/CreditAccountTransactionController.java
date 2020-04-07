@@ -126,7 +126,8 @@ public class CreditAccountTransactionController {
             @RequestParam("clientId")String clientId) {
     return Mono.just(ResponseEntity.ok()
       .contentType(MediaType.APPLICATION_JSON)
-      .body(creditAccountTransactionService.findByCreditAccountIdAndClientId(creditAccountId, clientId)))
+      .body(creditAccountTransactionService
+        .findByCreditAccountIdAndClientId(creditAccountId, clientId)))
       .defaultIfEmpty(ResponseEntity.notFound().build());
   }
 }
