@@ -1,7 +1,5 @@
 package ms.credit.account.service;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.util.Date;
 import ms.credit.account.model.CreditAccountTransaction;
 import ms.credit.account.repository.ICreditAccountRepository;
@@ -36,26 +34,26 @@ public class CreditAccountTransactionServiceImpl implements ICreditAccountTransa
   public Mono<CreditAccountTransaction> create(CreditAccountTransaction entity) {
     try {
       return creditAccountRepository.findById(entity.getCreditAccountId()).flatMap(ca -> {
-        return getClientByIdFromApi(entity.getClientId()).flatMap(cl -> {
-          JsonParser parser = new JsonParser();
-          JsonObject client = parser.parse(cl).getAsJsonObject();
-          String idClient = client.get("id").getAsString();
-
-          if (idClient != null) {
-            ca.setBalance(ca.getBalance() + entity.getAmount());
-            ca.setConsume(ca.getConsume() - entity.getAmount());
-            if (ca.getBalance() >= 0 && ca.getConsume() <= ca.getCreditAmount()) {
-              creditAccountRepository.save(ca).subscribe();
-              entity.setRegisterDate(new Date());
-              return creditAccountTransactionRepository.save(entity);
-            } else {
-              return Mono.error(
-                 new Exception("Consume can not exceed the limit of the credit account"));
-            }
-          } else {
-            return Mono.error(new Exception("Client not found"));
-          }
-        });
+        if (entity.getAmount() > ca.getConsume()) {
+          ca.setBalance(ca.getCreditAmount() + entity.getAmount() - ca.getConsume());
+          ca.setConsume(0.0);
+        } else if (entity.getAmount() > ca.getCreditAmount()
+            && ca.getBalance() > ca.getCreditAmount()) {
+          ca.setBalance(0.0);
+          ca.setConsume(ca.getCreditAmount());
+        } else {
+          ca.setBalance(ca.getBalance() + entity.getAmount());
+          ca.setConsume(ca.getConsume() - entity.getAmount());
+        }
+        
+        if (ca.getBalance() >= 0 && ca.getConsume() <= ca.getCreditAmount()) {
+          creditAccountRepository.save(ca).subscribe();
+          entity.setRegisterDate(new Date());
+          return creditAccountTransactionRepository.save(entity);
+        } else {
+          return Mono.error(
+             new Exception("Consume can not exceed the limit of the credit account"));
+        }
       }).switchIfEmpty(Mono.error(new Exception("Credit Account not found")));
     } catch (Exception e) {
       return Mono.error(e);
@@ -67,26 +65,15 @@ public class CreditAccountTransactionServiceImpl implements ICreditAccountTransa
     try {
       return creditAccountTransactionRepository.findById(entity.getId()).flatMap(catr -> {
         return creditAccountRepository.findById(entity.getCreditAccountId()).flatMap(cat -> {
-          return getClientByIdFromApi(entity.getClientId()).flatMap(cl -> {
-            JsonParser parser = new JsonParser();
-            JsonObject client = parser.parse(cl).getAsJsonObject();
-            String idClient = client.get("id").getAsString();
-
-            if (idClient != null) {
-              cat.setBalance(cat.getBalance() + entity.getAmount());
-              cat.setConsume(cat.getConsume() - entity.getAmount());
-              if (cat.getBalance() >= 0 && cat.getConsume() <= cat.getCreditAmount()) {
-                creditAccountRepository.save(cat).subscribe();
-                entity.setRegisterDate(new Date());
-                return creditAccountTransactionRepository.save(entity);
-              } else {
-                return Mono.error(
-                     new Exception("Consume can not exceed the limit of the credit account"));
-              }
-            } else {
-              return Mono.error(new Exception("Client not found"));
-            }
-          });
+          cat.setBalance(cat.getBalance() + entity.getAmount());
+          cat.setConsume(cat.getConsume() - entity.getAmount());
+          if (cat.getBalance() >= 0 && cat.getConsume() <= cat.getCreditAmount()) {
+            creditAccountRepository.save(cat).subscribe();
+            return creditAccountTransactionRepository.save(entity);
+          } else {
+            return Mono.error(
+                 new Exception("Consume can not exceed the limit of the credit account"));
+          }
         }).switchIfEmpty(Mono.error(new Exception("Credit Account not found")));
       }).switchIfEmpty(Mono.error(new Exception("Credit Account Transaction not found")));
     } catch (Exception e) {
@@ -106,25 +93,6 @@ public class CreditAccountTransactionServiceImpl implements ICreditAccountTransa
   }
 
   @Override
-  public Flux<CreditAccountTransaction> findByClientId(String clientId) {
-    try {
-      return getClientByIdFromApi(clientId).flatMapMany(cl -> {
-        JsonParser parser = new JsonParser();
-        JsonObject client = parser.parse(cl).getAsJsonObject();
-        String id = client.get("id").getAsString();
-
-        if (id != null) {
-          return creditAccountTransactionRepository.findByClientId(clientId); 
-        } else {
-          return Flux.error(new Exception("Client not found"));
-        }
-      });
-    } catch (Exception e) {
-      return Flux.error(e);
-    }
-  }
-
-  @Override
   public Flux<CreditAccountTransaction> findByCreditAccountId(String creditAccountId) {
     try {
       return creditAccountRepository.findById(creditAccountId).flatMapMany(ca -> {
@@ -136,36 +104,29 @@ public class CreditAccountTransactionServiceImpl implements ICreditAccountTransa
   }
   
   @Override
-  public Flux<CreditAccountTransaction>
-      findByCreditAccountIdAndClientId(String creditAccountId, String clientId) {
+  public Mono<Integer> payDebt(String creditAccountId, Double amount) {
     try {
-      return getClientByIdFromApi(clientId).flatMapMany(cl -> {
-        JsonParser parser = new JsonParser();
-        JsonObject client = parser.parse(cl).getAsJsonObject();
-        String id = client.get("id").getAsString();
-
-        if (id != null) {
-          return creditAccountRepository.findById(creditAccountId).flatMapMany(ca -> {
-            return creditAccountTransactionRepository
-                  .findByCreditAccountIdAndClientId(creditAccountId, clientId);
-          }).switchIfEmpty(Flux.error(new Exception("Credit Account not found")));
-        } else {
-          return Flux.error(new Exception("Client not found"));
-        }
-      });
+      return creditAccountRepository.findById(creditAccountId).flatMap(ca -> {
+        CreditAccountTransaction cat = new CreditAccountTransaction();
+        cat.setCreditAccountId(creditAccountId);
+        cat.setAmount(amount);
+        cat.setRegisterDate(new Date());
+        this.create(cat).subscribe();
+        return Mono.just(1);
+      }).switchIfEmpty(Mono.just(-1));
     } catch (Exception e) {
-      return Flux.error(e);
+      return Mono.error(e);
     }
   }
   
-  public Mono<String> getClientByIdFromApi(String id) {
+  public Mono<Boolean> existsBankByIdFromApi(String idBank) {
     try {
-      String url = "http://localhost:8001/client/findClientById?id=" + id;
+      String url = "http://localhost:8004/bank/existsById?id=" + idBank;
       return WebClient.create()
           .get()
           .uri(url)
           .retrieve()
-          .bodyToMono(String.class);
+          .bodyToMono(Boolean.class);
     } catch (Exception e) {
       return Mono.error(e);
     }

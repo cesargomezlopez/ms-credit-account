@@ -110,16 +110,5 @@ public class CreditAccountController {
         .body(debt));
     }).defaultIfEmpty(ResponseEntity.notFound().build());
   }
-  
-  @PostMapping(value = "/payDebt", produces = MediaType.APPLICATION_JSON_VALUE)
-  @ApiOperation(value = "Pay Credit Account Debt", notes = "Required credit account id")
-  public Mono<ResponseEntity<Integer>> payDebt(
-      @RequestParam("creditAccountId")String creditAccountId){
-    return creditAccountService.payDebt(creditAccountId).flatMap(rs -> {
-      return Mono.just(ResponseEntity
-        .ok()
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(rs));
-    }).defaultIfEmpty(ResponseEntity.notFound().build());
-  }
+
 }

@@ -12,7 +12,5 @@ public interface ICreditAccountService extends ICrud<CreditAccount, String> {
   Flux<CreditAccount> findByClientId(String clientId);
   
   Mono<Double> getDebt(String creditAccountId);
-  
-  Mono<Integer> payDebt(String creditAccount);
 
 }

@@ -90,19 +90,6 @@ public class CreditAccountTransactionController {
       .defaultIfEmpty(ResponseEntity.notFound().build());
   }
   
-  @GetMapping(value = "/findAllCreditAccountTransactionsByClientId",
-      produces = MediaType.APPLICATION_JSON_VALUE)
-  @ApiOperation(value = "Find All Client Credit Account Transactions",
-      notes = "Find All Client Credit Account Transactions registered")
-  public Mono<ResponseEntity<Flux<CreditAccountTransaction>>>
-          findAllCreditAccountTransactionsByClientId(
-            @RequestParam("clientId")String clientId) {
-    return Mono.just(ResponseEntity.ok()
-      .contentType(MediaType.APPLICATION_JSON)
-      .body(creditAccountTransactionService.findByClientId(clientId)))
-      .defaultIfEmpty(ResponseEntity.notFound().build());
-  }
-  
   @GetMapping(value = "/findAllCreditAccountTransactionsByCreditAccountId",
       produces = MediaType.APPLICATION_JSON_VALUE)
   @ApiOperation(value = "Find All Credit Account Transactions by Credit Account Id",
@@ -116,18 +103,17 @@ public class CreditAccountTransactionController {
       .defaultIfEmpty(ResponseEntity.notFound().build());
   }
   
-  @GetMapping(value = "/findAllCreditAccountTransactionsByCreditAccountIdAndClientId",
-      produces = MediaType.APPLICATION_JSON_VALUE)
-  @ApiOperation(value = "Find All Credit Account Transactions by Credit Account Id and Client Id",
-      notes = "Find All Credit Account Transactions registered by Credit Account Id and Client Id")
-  public Mono<ResponseEntity<Flux<CreditAccountTransaction>>>
-      findAllCreditAccountTransactionsByCreditAccountIdAndClientId(
-            @RequestParam("creditAccountId")String creditAccountId,
-            @RequestParam("clientId")String clientId) {
-    return Mono.just(ResponseEntity.ok()
-      .contentType(MediaType.APPLICATION_JSON)
-      .body(creditAccountTransactionService
-        .findByCreditAccountIdAndClientId(creditAccountId, clientId)))
-      .defaultIfEmpty(ResponseEntity.notFound().build());
+  @PostMapping(value = "/payDebt", produces = MediaType.APPLICATION_JSON_VALUE)
+  @ApiOperation(value = "Pay Credit Account Debt", notes = "Required credit account id")
+  public Mono<ResponseEntity<Integer>> payDebt(
+      @RequestParam("creditAccountId")String creditAccountId,
+      @RequestParam("amount")Double amount){
+    return creditAccountTransactionService.payDebt(creditAccountId, amount).flatMap(rs -> {
+      return Mono.just(ResponseEntity
+        .ok()
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(rs));
+    }).defaultIfEmpty(ResponseEntity.notFound().build());
   }
+
 }

@@ -35,19 +35,25 @@ public class CreditAccountServiceImpl implements ICreditAccountService {
   @Override
   public Mono<CreditAccount> create(CreditAccount entity) {
     try {
-      return getClientByIdFromApi(entity.getClientId()).flatMap(cl -> {
-        JsonParser parser = new JsonParser();
-        JsonObject client = parser.parse(cl).getAsJsonObject();
-        String id = client.get("id").getAsString();
-        
-        if (id != null) {
-          return creditAccountTypeRepository
-              .findById(entity.getCreditAccountType().getId()).flatMap(cat -> {
-                entity.setStartDate(new Date());
-                return creditAccountRepository.save(entity);
-              }).switchIfEmpty(Mono.error(new Exception("Credit Account Type not found")));
+      return existsBankByIdFromApi(entity.getBankId()).flatMap(rs -> {
+        if (rs) {
+          return getClientByIdFromApi(entity.getClientId()).flatMap(cl -> {
+            JsonParser parser = new JsonParser();
+            JsonObject client = parser.parse(cl).getAsJsonObject();
+            String id = client.get("id").getAsString();
+            
+            if (id != null) {
+              return creditAccountTypeRepository
+                  .findById(entity.getCreditAccountType().getId()).flatMap(cat -> {
+                    entity.setStartDate(new Date());
+                    return creditAccountRepository.save(entity);
+                  }).switchIfEmpty(Mono.error(new Exception("Credit Account Type not found")));
+            } else {
+              return Mono.error(new Exception("Client not found"));
+            }
+          });
         } else {
-          return Mono.error(new Exception("Client not found"));
+          return Mono.error(new Exception("Bank not found"));
         }
       });
     } catch (Exception e) {
@@ -60,19 +66,24 @@ public class CreditAccountServiceImpl implements ICreditAccountService {
     try {
       return creditAccountRepository.findById(entity.getId()).flatMap(ca -> {
         try {
-          return getClientByIdFromApi(entity.getClientId()).flatMap(cl -> {
-            JsonParser parser = new JsonParser();
-            JsonObject client = parser.parse(cl).getAsJsonObject();
-            String id = client.get("id").getAsString();
-              
-            if (id != null) {
-              return creditAccountTypeRepository
-                  .findById(entity.getCreditAccountType().getId()).flatMap(cat -> {
-                    entity.setStartDate(new Date());
-                    return creditAccountRepository.save(entity);
-                  }).switchIfEmpty(Mono.error(new Exception("Credit Account Type not found")));
+          return existsBankByIdFromApi(entity.getBankId()).flatMap(rs -> {
+            if (rs) {
+              return getClientByIdFromApi(entity.getClientId()).flatMap(cl -> {
+                JsonParser parser = new JsonParser();
+                JsonObject client = parser.parse(cl).getAsJsonObject();
+                String id = client.get("id").getAsString();
+                
+                if (id != null) {
+                  return creditAccountTypeRepository
+                    .findById(entity.getCreditAccountType().getId()).flatMap(cat -> {
+                      return creditAccountRepository.save(entity);
+                    }).switchIfEmpty(Mono.error(new Exception("Credit Account Type not found")));
+                } else {
+                  return Mono.error(new Exception("Client not found"));
+                }
+              });
             } else {
-              return Mono.error(new Exception("Client not found"));
+              return Mono.error(new Exception("Bank not found"));
             }
           });
         } catch (Exception e) {
@@ -117,20 +128,6 @@ public class CreditAccountServiceImpl implements ICreditAccountService {
       return Mono.error(e);
     }
   }
-  
-  @Override
-  public Mono<Integer> payDebt(String creditAccountId) {
-    try {
-      return creditAccountRepository.findById(creditAccountId).flatMap(ca -> {
-        ca.setBalance(ca.getCreditAmount());
-        ca.setConsume(0.0);
-        creditAccountRepository.save(ca).subscribe();
-        return Mono.just(1);
-      }).switchIfEmpty(Mono.just(-1));
-    } catch (Exception e) {
-      return Mono.error(e);
-    }
-  }
 
   private Mono<String> getClientByIdFromApi(String id) {
     String url = "http://localhost:8001/client/findClientById?id=" + id;
@@ -139,5 +136,18 @@ public class CreditAccountServiceImpl implements ICreditAccountService {
       .uri(url)
       .retrieve()
       .bodyToMono(String.class);
+  }
+  
+  public Mono<Boolean> existsBankByIdFromApi(String idBank) {
+    try {
+      String url = "http://localhost:8004/bank/existsById?id=" + idBank;
+      return WebClient.create()
+          .get()
+          .uri(url)
+          .retrieve()
+          .bodyToMono(Boolean.class);
+    } catch (Exception e) {
+      return Mono.error(e);
+    }
   }
 }

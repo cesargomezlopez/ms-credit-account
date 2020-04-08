@@ -9,11 +9,6 @@ import reactor.core.publisher.Flux;
 public interface ICreditAccountTransactionRepository
     extends ReactiveMongoRepository<CreditAccountTransaction, String> {
 
-  Flux<CreditAccountTransaction> findByClientId(String clientId);
-
   Flux<CreditAccountTransaction> findByCreditAccountId(String creditAccountId);
-  
-  Flux<CreditAccountTransaction>
-      findByCreditAccountIdAndClientId(String creditAccountId, String clientId);
 
 }
