@@ -37,8 +37,9 @@ public class CreditAccountTransactionServiceImpl implements ICreditAccountTransa
         if (entity.getAmount() > ca.getConsume()) {
           ca.setBalance(ca.getCreditAmount() + entity.getAmount() - ca.getConsume());
           ca.setConsume(0.0);
-        } else if (entity.getAmount() > ca.getCreditAmount()
+        } else if (-entity.getAmount() > ca.getCreditAmount()
             && ca.getBalance() > ca.getCreditAmount()) {
+          System.out.println("asdasdasdasdasd1");
           ca.setBalance(0.0);
           ca.setConsume(ca.getCreditAmount());
         } else {
